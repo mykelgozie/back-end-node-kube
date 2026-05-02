@@ -19,7 +19,7 @@ spec:
       containers:
       - name: my-node-app
         image: gozie007/ecommerce-backend:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
         env:
