@@ -45,6 +45,10 @@ jobs:
           --region ${{ secrets.AWS_REGION }}
 
       # ── Secrets ───────────────────────────────────────────────────────────
+    - name: Ensure namespace exists
+      run: |
+        kubectl create namespace ecommerce --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Sync Kubernetes Secrets
       run: |
         kubectl create secret generic ecommerce-secrets \
@@ -57,7 +61,7 @@ jobs:
           --from-literal=DB_NAME="${{ secrets.POSTGRES_DB }}" \
           --from-literal=DB_PASS="${{ secrets.POSTGRES_PASSWORD }}" \
           --dry-run=client -o yaml | kubectl apply -f -
-
+    
 
     - name: Apply Kubernetes Manifests
       run: kubectl apply -f k8s/
