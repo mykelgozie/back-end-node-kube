@@ -45,7 +45,7 @@ jobs:
           --region ${{ secrets.AWS_REGION }}
 
       # ── Secrets ───────────────────────────────────────────────────────────
-     - name: Sync Kubernetes Secrets
+    - name: Sync Kubernetes Secrets
       run: |
         kubectl create secret generic ecommerce-secrets \
           --namespace=ecommerce \
