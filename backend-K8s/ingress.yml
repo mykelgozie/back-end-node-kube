@@ -9,13 +9,12 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
 spec:
   rules:
-  - host: my-node-app.example.com
-    http:
+  - http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: my-node-app-svc
+            name: my-node-app-service   
             port:
-              number: 80
+              number: 5000            
