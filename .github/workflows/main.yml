@@ -68,6 +68,6 @@ jobs:
 
     - name: Wait for rollout
       run: |
-        kubectl rollout status deployment/Deployment \
+        kubectl rollout status deployment/my-node-app \
           --timeout=120s
-              
+                  
