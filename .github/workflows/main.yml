@@ -64,7 +64,7 @@ jobs:
     
 
     - name: Apply Kubernetes Manifests
-      run: kubectl apply -f k8s/
+      run: kubectl apply -f backend-K8s/
 
     - name: Wait for rollout
       run: |
