@@ -31,32 +31,41 @@ jobs:
       run: docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend:latest
 
 
-    - name: Copy docker-compose to EC2
-      uses: appleboy/scp-action@v0.1.7
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "Docker-compose.yml"
-        target: "~/ecommerce"
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        envs: DOCKER_USERNAME,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB
-        script: |
-         cd ~/ecommerce
-         echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
-         echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
-         echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-         echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
-         echo "DB_USER=${{ secrets.POSTGRES_USER }}" >> .env
-         echo "DB_HOST=${{ secrets.POSTGRES_USER }}" >> .env
-         echo "DB_NAME=${{ secrets.POSTGRES_DB }}" >> .env
-         echo "DB_PASS=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-         docker pull ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend:latest
-         docker compose -f Docker-compose.yml up -d
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig \
+          --name ${{ secrets.EKS_CLUSTER }} \
+          --region ${{ secrets.AWS_REGION }}
+
+      # ── Secrets ───────────────────────────────────────────────────────────
+    - name: Sync Kubernetes Secrets
+      run: |
+          kubectl create secret generic ecommerce-secrets \
+            --namespace=ecommerce \
+            --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            --from-literal=DB_USER=${{ secrets.POSTGRES_USER }} \
+            --from-literal=DB_HOST=postgres \
+            --from-literal=DB_NAME=${{ secrets.POSTGRES_DB }} \
+            --from-literal=DB_PASS=${{ secrets.POSTGRES_PASSWORD }} \
+            --save-config \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+
+    - name: Apply Kubernetes Manifests
+      run: kubectl apply -f k8s/
+
+    - name: Wait for rollout
+      run: |
+          kubectl rollout status deployment/ecommerce-backend \
+            --namespace=ecommerce \
+            --timeout=120s
           
