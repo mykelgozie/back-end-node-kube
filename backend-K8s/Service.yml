@@ -5,10 +5,11 @@ metadata:
 spec:
   selector:
     app: my-node-app
-  type: ClusterIP
+  type: LoadBalancer
   ports:
   - port: 5000
     targetPort: 5000
+    protocol: TCP
 
 ---
 apiVersion: v1
